@@ -1,5 +1,3 @@
-[![MIT License][license-shield]][license-url]
-
 ## Building
 
 Building the project requires some initial setup, after which running `dotnet build` will do a Debug build or running `dotnet build -c Release` will do a Release build.
