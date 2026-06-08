@@ -1,0 +1,9 @@
+{
+	"Id": "StockCarRemover",
+	"Version": "1.0.0",
+	"DisplayName": "StockCarRemover",
+	"Author": "SharkBaitDLS",
+	"EntryMethod": "StockCarRemover.Main.Load",
+	"ManagerVersion": "0.27.3",
+	"Repository": "https://raw.githubusercontent.com/SharkBaitDLS/dv-StockCarRemover/main/repository.json"
+}
