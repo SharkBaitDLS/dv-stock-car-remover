@@ -9,13 +9,34 @@
 
 	<!-- Derail Valley -->
 	<ItemGroup>
-		<Reference Include="Assembly-CSharp"/>
+		<Reference Include="Assembly-CSharp">
+			<HintPath>$(ReferencePath)Assembly-CSharp.dll</HintPath>
+		</Reference>
+		<Reference Include="DV.Localization">
+			<HintPath>$(ReferencePath)DV.Localization.dll</HintPath>
+		</Reference>
+		<Reference Include="I2.Localization">
+			<HintPath>$(ReferencePath)I2.Localization.dll</HintPath>
+		</Reference>
+		<Reference Include="DV.ThingTypes">
+			<HintPath>$(ReferencePath)DV.ThingTypes.dll</HintPath>
+		</Reference>
+		<Reference Include="DV.Utils">
+			<HintPath>$(ReferencePath)DV.Utils.dll</HintPath>
+		</Reference>
 	</ItemGroup>
 
 	<!-- Unity -->
 	<ItemGroup>
-		<Reference Include="UnityEngine"/>
-		<Reference Include="UnityEngine.CoreModule"/>
+		<Reference Include="UnityEngine">
+			<HintPath>$(ReferencePath)UnityEngine.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<HintPath>$(ReferencePath)UnityEngine.CoreModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.IMGUIModule">
+			<HintPath>$(ReferencePath)UnityEngine.IMGUIModule.dll</HintPath>
+		</Reference>
 	</ItemGroup>
 
 	<!-- Mod Loader -->
