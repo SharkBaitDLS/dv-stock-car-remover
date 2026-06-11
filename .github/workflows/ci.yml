@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: [self-hosted, Windows]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Restore
+        run: dotnet restore StockCarRemover.sln
+
+      - name: Lint
+        run: dotnet format StockCarRemover.sln --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build StockCarRemover.sln -c Release --no-restore
