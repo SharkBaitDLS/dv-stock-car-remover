@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using DV.ThingTypes;
@@ -47,6 +47,12 @@ public static class GetRandomFromListPatch
 // ensuring correct probability distribution (disabled locos don't dilute the pool
 // with empty spawn slots). Stores originals so settings changes can be re-applied
 // live without needing a save reload.
+//
+// Honors the original spawn pools by default, only overriding them where locomotive
+// replacements are explicitly specified. This means that a configuration that disables
+// too many locomotives will see reduced overall locomotive spawns unless replacements
+// are selected for enough of them, as certain tracks only have a subset of locomotives
+// in their pools.
 [HarmonyPatch(typeof(StationLocoSpawner), "Start")]
 public static class StationLocoSpawner_Start_Patch
 {
