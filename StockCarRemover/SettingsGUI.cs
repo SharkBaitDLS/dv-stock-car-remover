@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DV;
 using DV.Localization;
+using DV.Logic.Job;
 using DV.ThingTypes;
 using UnityEngine;
 using UnityModManagerNet;
@@ -13,8 +14,8 @@ internal static class SettingsGUI
     private const string NoReplacementLabel = "none (removed)";
 
     private static List<(TrainCarKind kind, List<TrainCarLivery> liveries)>? _groups;
-    private static List<TrainCarLivery>? _locoAndTenderLiveries;
-    private static readonly Dictionary<string, bool> _kindFoldouts = new();
+    private static List<TrainCarLivery>? _replaceableLiveries;
+    private static readonly Dictionary<string, bool> _kindFoldouts = [];
     private static string? _openPickerFor;
     private static Vector2 _pickerScroll;
     private static string _pickerSearch = "";
@@ -28,8 +29,8 @@ internal static class SettingsGUI
         }
 
         _groups ??= BuildGroups();
-        _locoAndTenderLiveries ??= [.. Globals.G.Types.Liveries
-            .Where(CarTypes.IsAnyLocoSlugTender)
+        _replaceableLiveries ??= [.. Globals.G.Types.Liveries
+            .Where(l => CarTypes.IsAnyLocoSlugTender(l) || CarTypes.IsCaboose(l))
             .OrderBy(l => l.id)];
 
         if (_openPickerFor != null && !Main.Settings.DisabledLiveryIds.Contains(_openPickerFor))
@@ -97,14 +98,14 @@ internal static class SettingsGUI
             }
             GUILayout.EndHorizontal();
 
-            var disabledLocos = liveries
-                .Where(l => Main.Settings.DisabledLiveryIds.Contains(l.id) && CarTypes.IsAnyLocoSlugTender(l))
+            var replaceableDisabled = liveries
+                .Where(l => Main.Settings.DisabledLiveryIds.Contains(l.id) && (CarTypes.IsAnyLocoSlugTender(l) || CarTypes.IsCaboose(l)))
                 .ToList();
-            if (disabledLocos.Count > 0)
+            if (replaceableDisabled.Count > 0)
             {
                 GUILayout.Space(4);
                 GUILayout.Label("Replacements:");
-                foreach (var livery in disabledLocos)
+                foreach (var livery in replaceableDisabled)
                     DrawReplacementRow(livery);
             }
 
@@ -169,7 +170,7 @@ internal static class SettingsGUI
             _openPickerFor = null;
         }
 
-        foreach (var candidate in _locoAndTenderLiveries!)
+        foreach (var candidate in _replaceableLiveries!)
         {
             if (candidate.id == forLiveryId) continue;
             string displayName = Loc(candidate.localizationKey, candidate.id);

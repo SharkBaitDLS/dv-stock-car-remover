@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using DV.ThingTypes;
@@ -6,42 +6,6 @@ using HarmonyLib;
 using UnityEngine;
 
 namespace StockCarRemover;
-
-// Filters liveries/car types out of the job generator's random-selection pool.
-// GetRandomFromList<T> is the single method the procedural job generator uses to
-// pick both train cars and locomotives to spawn, so it's a natural hook point to override.
-public static class GetRandomFromListPatch
-{
-    // Applies patches manually as PatchAll cannot resolve open generic methods
-    internal static void Register(Harmony harmony)
-    {
-        var genericDef = AccessTools.Method(typeof(StationProceduralJobGenerator), "GetRandomFromList");
-        var prefix = new HarmonyMethod(typeof(GetRandomFromListPatch), nameof(Prefix));
-        harmony.Patch(genericDef.MakeGenericMethod(typeof(TrainCarLivery)), prefix: prefix);
-        harmony.Patch(genericDef.MakeGenericMethod(typeof(TrainCarType_v2)), prefix: prefix);
-    }
-
-    public static void Prefix(object __0)
-    {
-        switch (__0)
-        {
-            case List<TrainCarLivery> liveries:
-                for (int i = liveries.Count - 1; i >= 0; i--)
-                {
-                    if (!Main.Settings.DisabledLiveryIds.Contains(liveries[i].id)) continue;
-                    var rep = Main.Settings.GetReplacement(liveries[i]);
-                    if (rep != null) liveries[i] = rep;
-                    else liveries.RemoveAt(i);
-                }
-                break;
-
-            case List<TrainCarType_v2> carTypes:
-                carTypes.RemoveAll(ct => ct.liveries.All(l =>
-                    Main.Settings.DisabledLiveryIds.Contains(l.id) && Main.Settings.GetReplacement(l) == null));
-                break;
-        }
-    }
-}
 
 // Hooks into StationLocoSpawner at initialization to pre-filter the spawn pool,
 // ensuring correct probability distribution (disabled locos don't dilute the pool

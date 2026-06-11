@@ -18,7 +18,7 @@ public static class Main
         {
             harmony = new Harmony(modEntry.Info.Id);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-            GetRandomFromListPatch.Register(harmony);
+            JobGenerationPatches.Register(harmony);
         }
         catch (Exception ex)
         {
