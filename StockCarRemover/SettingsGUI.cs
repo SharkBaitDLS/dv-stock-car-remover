@@ -12,7 +12,6 @@ internal static class SettingsGUI
 {
     private const string NoReplacementLabel = "none (removed)";
 
-    private static List<(TrainCarKind kind, List<TrainCarLivery> liveries)>? _groups;
     private static List<TrainCarLivery>? _replaceableLiveries;
     private static readonly Dictionary<string, bool> _kindFoldouts = [];
     private static string? _openPickerFor;
@@ -23,9 +22,7 @@ internal static class SettingsGUI
         """
         Uncheck rolling stock to remove it from the spawn pool.
 
-        Non-cargo stock can optionally be given a replacement.
-            • Replacing non-shed locomotives will increase the overall quantity of spawned locomotives compared to just removing them.
-            • Replacing shed stock only has an effect if set before starting a new save.
+        Disabled locomotives and tenders can optionally be given a replacement to spawn in their place, which increases overall locomotive spawn rates.
         """;
 
     internal static void OnGUI(UnityModManager.ModEntry entry)
@@ -36,7 +33,6 @@ internal static class SettingsGUI
             return;
         }
 
-        _groups ??= BuildGroups();
         _replaceableLiveries ??= [.. Globals.G.Types.Liveries
             .Where(l => CarTypes.IsAnyLocoSlugTender(l) || CarTypes.IsCaboose(l))
             .OrderBy(l => l.id)];
@@ -52,8 +48,8 @@ internal static class SettingsGUI
             " Hide disabled locomotives' licenses from the career manager");
         GUILayout.Space(4);
 
-        foreach (var (kind, liveries) in _groups)
-            DrawKindSection(kind, liveries);
+        foreach (var (key, label, liveries) in BuildGroups())
+            DrawKindSection(key, label, liveries);
     }
 
     private static string Loc(string? key, string fallback) =>
@@ -62,15 +58,15 @@ internal static class SettingsGUI
     private static TrainCarLivery? GetLiveryById(string id) =>
         Globals.G?.Types?.Liveries.FirstOrDefault(l => l.id == id);
 
-    private static void DrawKindSection(TrainCarKind kind, List<TrainCarLivery> liveries)
+    private static void DrawKindSection(string key, string label, List<TrainCarLivery> liveries)
     {
-        _kindFoldouts.TryGetValue(kind.id, out bool expanded);
+        _kindFoldouts.TryGetValue(key, out bool expanded);
 
         GUILayout.BeginVertical(GUI.skin.box);
 
         GUILayout.BeginHorizontal();
-        if (GUILayout.Button($"{(expanded ? "▼" : "▶")}  {Loc(kind.localizationKey, kind.id)}", GUILayout.ExpandWidth(true)))
-            _kindFoldouts[kind.id] = !expanded;
+        if (GUILayout.Button($"{(expanded ? "▼" : "▶")}  {label}", GUILayout.ExpandWidth(true)))
+            _kindFoldouts[key] = !expanded;
 
         if (GUILayout.Button("Enable All", GUILayout.Width(90)))
         {
@@ -200,17 +196,20 @@ internal static class SettingsGUI
         GUILayout.EndVertical();
     }
 
-    private static List<(TrainCarKind kind, List<TrainCarLivery> liveries)> BuildGroups()
+    private static List<(string key, string label, List<TrainCarLivery> liveries)> BuildGroups()
     {
-        var result = new List<(TrainCarKind, List<TrainCarLivery>)>();
+        var result = new List<(string, string, List<TrainCarLivery>)>();
+
         foreach (var kind in Globals.G.Types.CarKinds)
         {
             var liveries = Globals.G.Types.Liveries
-                .Where(l => l.parentType?.kind == kind && !CustomCarLoaderInterop.IsCustomCar(l))
+                .Where(l => l.parentType?.kind == kind
+                            && !CustomCarLoaderInterop.IsCustomCar(l)
+                            && !GarageVehicles.Contains(l))
                 .OrderBy(l => l.id)
                 .ToList();
             if (liveries.Count > 0)
-                result.Add((kind, liveries));
+                result.Add((kind.id, Loc(kind.localizationKey, kind.id), liveries));
         }
         return result;
     }
