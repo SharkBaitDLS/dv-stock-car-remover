@@ -19,19 +19,27 @@ public static class GetRandomFromListPatch
         switch (__0)
         {
             case List<TrainCarLivery> liveries:
-                liveries.RemoveAll(l => Main.Settings.DisabledLiveryIds.Contains(l.id));
+                for (int i = liveries.Count - 1; i >= 0; i--)
+                {
+                    if (!Main.Settings.DisabledLiveryIds.Contains(liveries[i].id)) continue;
+                    var rep = Main.GetReplacement(liveries[i]);
+                    if (rep != null) liveries[i] = rep;
+                    else liveries.RemoveAt(i);
+                }
                 break;
 
             case List<TrainCarType_v2> carTypes:
-                carTypes.RemoveAll(ct => ct.liveries.All(l => Main.Settings.DisabledLiveryIds.Contains(l.id)));
+                carTypes.RemoveAll(ct => ct.liveries.All(l =>
+                    Main.Settings.DisabledLiveryIds.Contains(l.id) && Main.GetReplacement(l) == null));
                 break;
         }
     }
 }
 
 // Rewrites locoTypeGroupsToSpawn before the station's spawn loop can run.
-// Disabled liveries are removed from each group; groups that become entirely
-// empty are dropped so Update()'s index-based selection never hits them.
+// Disabled liveries are removed from each group (or replaced when configured);
+// groups that become entirely empty are dropped so Update()'s index-based
+// selection never hits them.
 //
 // nextLocoGroupSpawnIndex is set by Awake() against the unfiltered count before
 // Start() runs. After shortening the list we re-randomize it so Update() never
@@ -45,7 +53,13 @@ public static class StationLocoSpawner_Start_Patch
 
         __instance.locoTypeGroupsToSpawn.RemoveAll(group =>
         {
-            group.liveries.RemoveAll(l => Main.Settings.DisabledLiveryIds.Contains(l.id));
+            for (int i = group.liveries.Count - 1; i >= 0; i--)
+            {
+                if (!Main.Settings.DisabledLiveryIds.Contains(group.liveries[i].id)) continue;
+                var rep = Main.GetReplacement(group.liveries[i]);
+                if (rep != null) group.liveries[i] = rep;
+                else group.liveries.RemoveAt(i);
+            }
             return group.liveries.Count == 0;
         });
 
@@ -70,14 +84,23 @@ public static class CarSpawner_SpawnCarTypesOnTrack_Patch
     {
         if (playerSpawnedCars || Main.Settings.DisabledLiveryIds.Count == 0) return;
 
-        var keep = trainCarTypes
-            .Select((l, i) => (livery: l, i))
-            .Where(x => !Main.Settings.DisabledLiveryIds.Contains(x.livery.id))
-            .ToList();
+        var filteredLiveries = new List<TrainCarLivery>(trainCarTypes.Count);
+        var filteredOrientations = carsOrientationReversed != null ? new List<bool>() : null;
 
-        trainCarTypes = keep.Select(x => x.livery).ToList();
-        var orientations = carsOrientationReversed;
-        if (orientations != null)
-            carsOrientationReversed = keep.Select(x => orientations[x.i]).ToList();
+        for (int i = 0; i < trainCarTypes.Count; i++)
+        {
+            var livery = trainCarTypes[i];
+            if (Main.Settings.DisabledLiveryIds.Contains(livery.id))
+            {
+                var rep = Main.GetReplacement(livery);
+                if (rep == null) continue;
+                livery = rep;
+            }
+            filteredLiveries.Add(livery);
+            filteredOrientations?.Add(carsOrientationReversed![i]);
+        }
+
+        trainCarTypes = filteredLiveries;
+        if (filteredOrientations != null) carsOrientationReversed = filteredOrientations;
     }
 }
