@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using DV;
 using DV.Localization;
-using DV.Logic.Job;
 using DV.ThingTypes;
 using UnityEngine;
 using UnityModManagerNet;
@@ -20,6 +19,15 @@ internal static class SettingsGUI
     private static Vector2 _pickerScroll;
     private static string _pickerSearch = "";
 
+    private const string IntroText =
+        """
+        Uncheck rolling stock to remove it from the spawn pool.
+
+        Non-cargo stock can optionally be given a replacement.
+            • Replacing non-shed locomotives will increase the overall quantity of spawned locomotives compared to just removing them.
+            • Replacing shed stock only has an effect if set before starting a new save.
+        """;
+
     internal static void OnGUI(UnityModManager.ModEntry entry)
     {
         if (Globals.G == null || Globals.G.Types == null)
@@ -36,9 +44,7 @@ internal static class SettingsGUI
         if (_openPickerFor != null && !Main.Settings.DisabledLiveryIds.Contains(_openPickerFor))
             _openPickerFor = null;
 
-        GUILayout.Label(
-            "Uncheck a car or locomotive to remove it from the job or spawn pool. Disabled locomotives and tenders can optionally be replaced by another to improve spawn rates.",
-            GUILayout.ExpandWidth(true));
+        GUILayout.Label(IntroText, GUILayout.ExpandWidth(true));
         GUILayout.Space(4);
 
         Main.Settings.HideDisabledLocoLicenses = GUILayout.Toggle(
