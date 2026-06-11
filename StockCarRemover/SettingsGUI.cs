@@ -195,7 +195,7 @@ internal static class SettingsGUI
         foreach (var kind in Globals.G.Types.CarKinds)
         {
             var liveries = Globals.G.Types.Liveries
-                .Where(l => l.parentType?.kind == kind)
+                .Where(l => l.parentType?.kind == kind && !CustomCarLoaderInterop.IsCustomCar(l))
                 .OrderBy(l => l.id)
                 .ToList();
             if (liveries.Count > 0)
