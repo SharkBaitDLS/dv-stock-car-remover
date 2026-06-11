@@ -11,6 +11,8 @@ public class Settings : UnityModManager.ModSettings
     public HashSet<string> DisabledLiveryIds { get; set; } = [];
     public Dictionary<string, string> LiveryReplacements { get; set; } = [];
 
+    public bool HideDisabledLocoLicenses { get; set; } = true;
+
     public override void Save(UnityModManager.ModEntry modEntry) => Save(this, modEntry);
 
     internal TrainCarLivery? GetReplacement(TrainCarLivery disabled)

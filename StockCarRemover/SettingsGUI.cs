@@ -41,6 +41,11 @@ internal static class SettingsGUI
             GUILayout.ExpandWidth(true));
         GUILayout.Space(4);
 
+        Main.Settings.HideDisabledLocoLicenses = GUILayout.Toggle(
+            Main.Settings.HideDisabledLocoLicenses,
+            " Hide disabled locomotives' licenses from the career manager");
+        GUILayout.Space(4);
+
         foreach (var (kind, liveries) in _groups)
             DrawKindSection(kind, liveries);
     }

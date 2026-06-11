@@ -32,6 +32,7 @@ public static class Main
         {
             Settings.Save(entry);
             StationLocoSpawner_Start_Patch.ReapplyAll();
+            CareerManagerLicensesScreen_Patch.ReapplyAll();
         };
         return true;
     }
