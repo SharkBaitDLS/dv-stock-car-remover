@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using DV.ThingTypes;
 using HarmonyLib;
 using UnityEngine;
@@ -8,12 +9,18 @@ namespace StockCarRemover;
 
 // Filters liveries/car types out of the job generator's random-selection pool.
 // GetRandomFromList<T> is the single method the procedural job generator uses to
-// pick both a TrainCarLivery and a TrainCarType_v2 for every job it creates, so
-// patching it is the minimal, robust hook point.
-// The generic instantiations are registered manually in Main.Load because
-// harmony.PatchAll cannot resolve open generic methods on its own.
+// pick both train cars and locomotives to spawn, so it's a natural hook point to override.
 public static class GetRandomFromListPatch
 {
+    // Applies patches manually as PatchAll cannot resolve open generic methods
+    internal static void Register(Harmony harmony)
+    {
+        var genericDef = AccessTools.Method(typeof(StationProceduralJobGenerator), "GetRandomFromList");
+        var prefix = new HarmonyMethod(typeof(GetRandomFromListPatch), nameof(Prefix));
+        harmony.Patch(genericDef.MakeGenericMethod(typeof(TrainCarLivery)), prefix: prefix);
+        harmony.Patch(genericDef.MakeGenericMethod(typeof(TrainCarType_v2)), prefix: prefix);
+    }
+
     public static void Prefix(object __0)
     {
         switch (__0)
@@ -22,7 +29,7 @@ public static class GetRandomFromListPatch
                 for (int i = liveries.Count - 1; i >= 0; i--)
                 {
                     if (!Main.Settings.DisabledLiveryIds.Contains(liveries[i].id)) continue;
-                    var rep = Main.GetReplacement(liveries[i]);
+                    var rep = Main.Settings.GetReplacement(liveries[i]);
                     if (rep != null) liveries[i] = rep;
                     else liveries.RemoveAt(i);
                 }
@@ -30,77 +37,69 @@ public static class GetRandomFromListPatch
 
             case List<TrainCarType_v2> carTypes:
                 carTypes.RemoveAll(ct => ct.liveries.All(l =>
-                    Main.Settings.DisabledLiveryIds.Contains(l.id) && Main.GetReplacement(l) == null));
+                    Main.Settings.DisabledLiveryIds.Contains(l.id) && Main.Settings.GetReplacement(l) == null));
                 break;
         }
     }
 }
 
-// Rewrites locoTypeGroupsToSpawn before the station's spawn loop can run.
-// Disabled liveries are removed from each group (or replaced when configured);
-// groups that become entirely empty are dropped so Update()'s index-based
-// selection never hits them.
-//
-// nextLocoGroupSpawnIndex is set by Awake() against the unfiltered count before
-// Start() runs. After shortening the list we re-randomize it so Update() never
-// hits an out-of-bounds access on the first player visit.
+// Hooks into StationLocoSpawner at initialization to pre-filter the spawn pool,
+// ensuring correct probability distribution (disabled locos don't dilute the pool
+// with empty spawn slots). Stores originals so settings changes can be re-applied
+// live without needing a save reload.
 [HarmonyPatch(typeof(StationLocoSpawner), "Start")]
 public static class StationLocoSpawner_Start_Patch
 {
+    // Weakly keyed so entries don't prevent spawner GC when scenes unload.
+    private static readonly ConditionalWeakTable<StationLocoSpawner, List<List<TrainCarLivery>>> _originals = new();
+
     public static void Postfix(StationLocoSpawner __instance)
+    {
+        var originals = __instance.locoTypeGroupsToSpawn
+            .Select(g => new List<TrainCarLivery>(g.liveries))
+            .ToList();
+        _originals.Add(__instance, originals);
+
+        ApplySettings(__instance);
+    }
+
+    internal static void ReapplyAll()
+    {
+        foreach (var spawner in Object.FindObjectsOfType<StationLocoSpawner>())
+            Reapply(spawner);
+    }
+
+    private static void Reapply(StationLocoSpawner spawner)
+    {
+        if (!_originals.TryGetValue(spawner, out var originals)) return;
+
+        spawner.locoTypeGroupsToSpawn.Clear();
+        foreach (var liveries in originals)
+            spawner.locoTypeGroupsToSpawn.Add(new ListTrainCarTypeWrapper([.. liveries]));
+
+        ApplySettings(spawner);
+    }
+
+    private static void ApplySettings(StationLocoSpawner instance)
     {
         if (Main.Settings.DisabledLiveryIds.Count == 0) return;
 
-        __instance.locoTypeGroupsToSpawn.RemoveAll(group =>
+        instance.locoTypeGroupsToSpawn.RemoveAll(group =>
         {
             for (int i = group.liveries.Count - 1; i >= 0; i--)
             {
                 if (!Main.Settings.DisabledLiveryIds.Contains(group.liveries[i].id)) continue;
-                var rep = Main.GetReplacement(group.liveries[i]);
+                var rep = Main.Settings.GetReplacement(group.liveries[i]);
                 if (rep != null) group.liveries[i] = rep;
                 else group.liveries.RemoveAt(i);
             }
             return group.liveries.Count == 0;
         });
 
-        var count = __instance.locoTypeGroupsToSpawn.Count;
+        var count = instance.locoTypeGroupsToSpawn.Count;
         if (count > 0)
-            Traverse.Create(__instance)
+            Traverse.Create(instance)
                 .Field("nextLocoGroupSpawnIndex")
                 .SetValue(Random.Range(0, count));
-    }
-}
-
-// Catch-all safety net: filters any remaining disabled liveries from non-player
-// SpawnCarTypesOnTrack calls. Handles settings changes made after Start() has run.
-// Uses ref to replace with new filtered lists rather than mutating the stored groups.
-[HarmonyPatch(typeof(CarSpawner), nameof(CarSpawner.SpawnCarTypesOnTrack))]
-public static class CarSpawner_SpawnCarTypesOnTrack_Patch
-{
-    public static void Prefix(
-        ref List<TrainCarLivery> trainCarTypes,
-        ref List<bool> carsOrientationReversed,
-        bool playerSpawnedCars)
-    {
-        if (playerSpawnedCars || Main.Settings.DisabledLiveryIds.Count == 0) return;
-
-        var filteredLiveries = new List<TrainCarLivery>(trainCarTypes.Count);
-        var filteredOrientations = carsOrientationReversed != null ? new List<bool>() : null;
-
-        for (int i = 0; i < trainCarTypes.Count; i++)
-        {
-            var livery = trainCarTypes[i];
-            if (Main.Settings.DisabledLiveryIds.Contains(livery.id))
-            {
-                var rep = Main.GetReplacement(livery);
-                if (rep == null) continue;
-                livery = rep;
-            }
-            filteredLiveries.Add(livery);
-            filteredOrientations?.Add(carsOrientationReversed![i]);
-        }
-
-        trainCarTypes = filteredLiveries;
-        if (filteredOrientations != null) carsOrientationReversed = filteredOrientations;
     }
 }

@@ -1,8 +1,5 @@
 using System;
-using System.Linq;
 using System.Reflection;
-using DV;
-using DV.ThingTypes;
 using HarmonyLib;
 using UnityModManagerNet;
 
@@ -21,13 +18,7 @@ public static class Main
         {
             harmony = new Harmony(modEntry.Info.Id);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-
-            // GetRandomFromList<T> is a generic instance method — PatchAll cannot
-            // resolve generic instantiations, so we register them manually.
-            var genericDef = AccessTools.Method(typeof(StationProceduralJobGenerator), "GetRandomFromList");
-            var prefix = new HarmonyMethod(typeof(GetRandomFromListPatch), nameof(GetRandomFromListPatch.Prefix));
-            harmony.Patch(genericDef.MakeGenericMethod(typeof(TrainCarLivery)), prefix: prefix);
-            harmony.Patch(genericDef.MakeGenericMethod(typeof(TrainCarType_v2)), prefix: prefix);
+            GetRandomFromListPatch.Register(harmony);
         }
         catch (Exception ex)
         {
@@ -37,16 +28,13 @@ public static class Main
         }
 
         modEntry.OnGUI = SettingsGUI.OnGUI;
-        modEntry.OnSaveGUI = entry => Settings.Save(entry);
+        modEntry.OnSaveGUI = entry =>
+        {
+            Settings.Save(entry);
+            StationLocoSpawner_Start_Patch.ReapplyAll();
+        };
         return true;
     }
 
-    // Returns the configured replacement for a disabled loco/tender livery, or
-    // null if none is set, the replacement is also disabled, or the livery is
-    // not a loco or tender.
-    internal static TrainCarLivery? GetReplacement(TrainCarLivery disabled)
-    {
-        if (!Settings.LiveryReplacements.TryGetValue(disabled.id, out var replacementId)) return null;
-        return Globals.G?.Types?.Liveries.FirstOrDefault(l => l.id == replacementId);
-    }
+
 }
