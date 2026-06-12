@@ -182,8 +182,8 @@ internal static class SettingsGUI
             if (candidate.id == forLiveryId) continue;
             string displayName = Loc(candidate.localizationKey, candidate.id);
             if (_pickerSearch.Length > 0
-                && !displayName.Contains(_pickerSearch)
-                && !candidate.id.Contains(_pickerSearch))
+                && !displayName.ToLower().Contains(_pickerSearch.ToLower())
+                && !candidate.id.ToLower().Contains(_pickerSearch.ToLower()))
                 continue;
             if (GUILayout.Button($"{displayName}  [{candidate.id}]", GUILayout.ExpandWidth(true)))
             {

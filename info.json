@@ -1,6 +1,6 @@
 {
 	"Id": "StockCarRemover",
-	"Version": "1.0.0",
+	"Version": "1.0.1",
 	"DisplayName": "Stock Car Remover",
 	"Author": "SharkBaitDLS",
 	"EntryMethod": "StockCarRemover.Main.Load",
