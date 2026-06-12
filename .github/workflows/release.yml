@@ -12,6 +12,9 @@ jobs:
   release:
     runs-on: [self-hosted, Windows]
 
+    env:
+      ReferencePath: 'C:\Program Files (x86)\Steam\steamapps\common\Derail Valley\DerailValley_Data\Managed\'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
