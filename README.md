@@ -1,3 +1,7 @@
+## Description
+
+This is a mod for Derail Valley to remove vanilla rolling stock from the spawn pool. For details, see [the mod page on Nexus Mods](https://www.nexusmods.com/derailvalley/mods/1541).
+
 ## Building
 
 Building the project requires some initial setup, after which running `dotnet build` will do a Debug build or running `dotnet build -c Release` will do a Release build.
