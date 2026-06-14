@@ -10,6 +10,7 @@ namespace StockCarRemover;
 public class Settings : UnityModManager.ModSettings
 {
     public bool HideDisabledLocoLicenses { get; set; } = true;
+    public bool EnableStationFallback { get; set; } = true;
 
     // XmlSerializer goes through the accessor methods below that conform to its interface 
     [XmlIgnore] public HashSet<string> DisabledLiveryIds { get; set; } = [];

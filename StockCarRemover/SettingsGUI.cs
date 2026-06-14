@@ -46,6 +46,11 @@ internal static class SettingsGUI
         Main.Settings.HideDisabledLocoLicenses = GUILayout.Toggle(
             Main.Settings.HideDisabledLocoLicenses,
             " Hide disabled locomotives' licenses from the career manager");
+
+        Main.Settings.EnableStationFallback = GUILayout.Toggle(
+            Main.Settings.EnableStationFallback,
+            " Fall back to vanilla spawn rules if no jobs can be generated at a station");
+
         GUILayout.Space(4);
 
         foreach (var (key, label, liveries) in BuildGroups())

@@ -75,7 +75,13 @@ public static class JobGenerationPatches
         if (Main.Settings.DisabledLiveryIds.Count == 0) return true;
 
         var pool = __0.Where(CarFilter.IsCargoCarriable).ToList();
-        if (pool.Count == 0) return true; // nothing carriable, fall back to vanilla logic
+        if (pool.Count == 0)
+        {
+            if (Main.Settings.EnableStationFallback) return true;
+
+            __result = [];
+            return false;
+        }
 
         var rng = Rng(__instance);
         int count = System.Math.Min(__1, pool.Count);
