@@ -73,3 +73,11 @@ public static class StationLocoSpawner_Start_Patch
                 .SetValue(Random.Range(0, count));
     }
 }
+
+// Skip the spawn logic entirely when there is nothing left to spawn in a location
+[HarmonyPatch(typeof(StationLocoSpawner), "Update")]
+public static class StationLocoSpawner_Update_Patch
+{
+    public static bool Prefix(StationLocoSpawner __instance) =>
+        __instance.locoTypeGroupsToSpawn.Count > 0;
+}
