@@ -9,8 +9,11 @@ public static class Main
 {
     internal static Settings Settings { get; private set; } = null!;
 
+    internal static UnityModManager.ModEntry.ModLogger Logger { get; private set; } = null!;
+
     private static bool Load(UnityModManager.ModEntry modEntry)
     {
+        Logger = modEntry.Logger;
         Settings = UnityModManager.ModSettings.Load<Settings>(modEntry);
 
         Harmony? harmony = null;
@@ -36,6 +39,4 @@ public static class Main
         };
         return true;
     }
-
-
 }
