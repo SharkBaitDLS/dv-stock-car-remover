@@ -52,25 +52,68 @@ public static class StationLocoSpawner_Start_Patch
 
     private static void ApplySettings(StationLocoSpawner instance)
     {
-        if (Main.Settings.DisabledLiveryIds.Count == 0) return;
+        if (Main.Settings.DisabledLiveryIds.Count == 0)
+            return;
 
-        instance.locoTypeGroupsToSpawn.RemoveAll(group =>
-        {
-            for (int i = group.liveries.Count - 1; i >= 0; i--)
-            {
-                if (!Main.Settings.DisabledLiveryIds.Contains(group.liveries[i].id)) continue;
-                var rep = Main.Settings.GetReplacement(group.liveries[i]);
-                if (rep != null) group.liveries[i] = rep;
-                else group.liveries.RemoveAt(i);
-            }
-            return group.liveries.Count == 0;
-        });
+        foreach (var group in instance.locoTypeGroupsToSpawn)
+            ApplyToGroup(group.liveries);
+        instance.locoTypeGroupsToSpawn.RemoveAll(group => group.liveries.Count == 0);
 
         var count = instance.locoTypeGroupsToSpawn.Count;
         if (count > 0)
             Traverse.Create(instance)
                 .Field("nextLocoGroupSpawnIndex")
                 .SetValue(Random.Range(0, count));
+    }
+
+    private static void ApplyToGroup(List<TrainCarLivery> liveries)
+    {
+        for (int i = liveries.Count - 1; i >= 0; i--)
+        {
+            var slot = liveries[i];
+            if (!Main.Settings.DisabledLiveryIds.Contains(slot.id)) continue;
+
+            var rep = Main.Settings.GetReplacement(slot);
+            if (rep == null)
+            {
+                liveries.RemoveAt(i);
+                continue;
+            }
+            liveries[i] = rep;
+
+            // Couple the configured tender to the replaced loco (keyed by the original slot id).
+            if (CarTypes.IsLocomotive(slot))
+                ApplyTenderAt(liveries, i, ResolveTenderId(slot, rep));
+        }
+        RemoveOrphanTenders(liveries);
+    }
+
+    private static string ResolveTenderId(TrainCarLivery slot, TrainCarLivery replacement) =>
+        Main.Settings.TenderOverrides.TryGetValue(slot.id, out var choice)
+            ? choice
+            : Liveries.ConventionalTender(replacement)?.id ?? Settings.NoTender;
+
+    private static void ApplyTenderAt(List<TrainCarLivery> liveries, int locoIndex, string tenderId)
+    {
+        int t = locoIndex + 1;
+        bool hasTrailingTender = t < liveries.Count && CarTypes.IsTender(liveries[t]);
+
+        var tender = tenderId == Settings.NoTender ? null : Liveries.ById(tenderId);
+
+        if (tender == null)
+        {
+            if (hasTrailingTender) liveries.RemoveAt(t);
+            return;
+        }
+        if (hasTrailingTender) liveries[t] = tender;
+        else liveries.Insert(t, tender);
+    }
+
+    private static void RemoveOrphanTenders(List<TrainCarLivery> liveries)
+    {
+        for (int i = liveries.Count - 1; i >= 0; i--)
+            if (CarTypes.IsTender(liveries[i]) && (i == 0 || !CarTypes.IsLocomotive(liveries[i - 1])))
+                liveries.RemoveAt(i);
     }
 }
 
