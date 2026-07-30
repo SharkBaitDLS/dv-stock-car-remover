@@ -1,13 +1,14 @@
 {
 	"Id": "StockCarRemover",
-	"Version": "1.3.0",
+	"Version": "1.4.0",
 	"DisplayName": "Stock Car Remover",
 	"Author": "SharkBaitDLS",
 	"EntryMethod": "StockCarRemover.Main.Load",
 	"ManagerVersion": "0.27.3",
 	"Repository": "https://raw.githubusercontent.com/SharkBaitDLS/dv-stock-car-remover/main/repository.json",
 	"LoadAfter": [
-		"DVCustomCarLoader",	
+		"DVCustomCarLoader",
+		"PassengerJobs",
 		"PersistentJobsMod"
 	]
 }
