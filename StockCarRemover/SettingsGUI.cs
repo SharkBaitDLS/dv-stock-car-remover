@@ -225,7 +225,7 @@ internal static class SettingsGUI
             if (GUILayout.Button($"{displayName}  [{candidate.id}]", GUILayout.ExpandWidth(true)))
             {
                 Main.Settings.LiveryReplacements[forLiveryId] = candidate.id;
-                Main.Settings.TenderOverrides[forLiveryId] = Liveries.ConventionalTender(candidate)?.id ?? Settings.NoTender;
+                Main.Settings.TenderOverrides[forLiveryId] = Liveries.AutoTender(candidate)?.id ?? Settings.NoTender;
                 _openPickerFor = null;
             }
         }
@@ -269,7 +269,7 @@ internal static class SettingsGUI
 
     private static string DefaultTenderLabel(TrainCarLivery? effectiveLoco)
     {
-        var natural = effectiveLoco != null ? Liveries.ConventionalTender(effectiveLoco) : null;
+        var natural = effectiveLoco != null ? Liveries.AutoTender(effectiveLoco) : null;
         return natural != null
             ? $"Default ({Loc(natural.localizationKey, natural.id)})"
             : "Default (none)";

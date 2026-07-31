@@ -91,7 +91,7 @@ public static class StationLocoSpawner_Start_Patch
     private static string ResolveTenderId(TrainCarLivery slot, TrainCarLivery replacement) =>
         Main.Settings.TenderOverrides.TryGetValue(slot.id, out var choice)
             ? choice
-            : Liveries.ConventionalTender(replacement)?.id ?? Settings.NoTender;
+            : Liveries.AutoTender(replacement)?.id ?? Settings.NoTender;
 
     private static void ApplyTenderAt(List<TrainCarLivery> liveries, int locoIndex, string tenderId)
     {
