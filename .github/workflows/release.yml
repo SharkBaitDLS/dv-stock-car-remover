@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - '*'
 
 permissions:
   contents: write
@@ -19,44 +19,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Verify tag matches info.json version
+      - name: Classify tag
+        id: tag
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $tag = '${{ github.ref_name }}' -replace '^v', ''
-          $info = Get-Content -Raw info.json | ConvertFrom-Json
-          $errors = @()
-
-          if ($info.Version -ne $tag) {
-            $errors += "info.json Version is '$($info.Version)', expected '$tag'."
-          }
-
-          $release = (Get-Content -Raw repository.json | ConvertFrom-Json).Releases |
-            Where-Object { $_.Id -eq $info.Id }
-          if (-not $release) {
-            $errors += "repository.json has no Releases entry with Id '$($info.Id)'."
+          $tag = '${{ github.ref_name }}'
+          if ($tag -match '^[0-9]+\.[0-9]+\.[0-9]+$') {
+            Write-Host "Tag '$tag' is a full release."
+            "candidate=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           } else {
-            if ($release.Version -ne $tag) {
-              $errors += "repository.json Version is '$($release.Version)', expected '$tag'."
-            }
-            $expectedUrl = "https://github.com/${{ github.repository }}/releases/download/$tag/$($info.Id).zip"
-            if ($release.DownloadUrl -ne $expectedUrl) {
-              $errors += "repository.json DownloadUrl is '$($release.DownloadUrl)', expected '$expectedUrl'."
-            }
+            Write-Host "Tag '$tag' is a release candidate."
+            "candidate=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           }
 
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Host "::error::$_" }
-            Write-Error "Version mismatch for tag '$tag'. Bump every version field in info.json and repository.json (including the version inside DownloadUrl) before tagging."
-            exit 1
+      - name: Verify tag matches a valid manifest entry
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $params = @{ Tag = '${{ github.ref_name }}' }
+          if ('${{ steps.tag.outputs.candidate }}' -eq 'true') {
+            $params.WarnOnly = $true
           }
-          Write-Host "Releasing version $tag"
-
+          ./validate-manifests.ps1 @params
 
       - name: Build and package
         run: dotnet build StockCarRemover.sln -c Release
 
       - name: Create GitHub release
+        shell: powershell
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ github.ref_name }} dist/StockCarRemover.zip --title ${{ github.ref_name }} --generate-notes
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ghArgs = @(
+            'release', 'create', '${{ github.ref_name }}', 'dist/StockCarRemover.zip',
+            '--title', '${{ github.ref_name }}', '--generate-notes'
+          )
+          if ('${{ steps.tag.outputs.candidate }}' -eq 'true') {
+            $ghArgs += '--draft'
+            $ghArgs += '--prerelease'
+          }
+          gh @ghArgs

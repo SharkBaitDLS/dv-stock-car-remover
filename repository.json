@@ -4,6 +4,41 @@
 			"Id": "StockCarRemover",
 			"Version": "1.4.1",
 			"DownloadUrl": "https://github.com/SharkBaitDLS/dv-stock-car-remover/releases/download/1.4.1/StockCarRemover.zip"
+		},
+		{
+			"Id": "StockCarRemover",
+			"Version": "1.4.0",
+			"DownloadUrl": "https://github.com/SharkBaitDLS/dv-stock-car-remover/releases/download/1.4.0/StockCarRemover.zip"
+		},
+		{
+			"Id": "StockCarRemover",
+			"Version": "1.3.0",
+			"DownloadUrl": "https://github.com/SharkBaitDLS/dv-stock-car-remover/releases/download/1.3.0/StockCarRemover.zip"
+		},
+		{
+			"Id": "StockCarRemover",
+			"Version": "1.2.1",
+			"DownloadUrl": "https://github.com/SharkBaitDLS/dv-stock-car-remover/releases/download/1.2.1/StockCarRemover.zip"
+		},
+		{
+			"Id": "StockCarRemover",
+			"Version": "1.2.0",
+			"DownloadUrl": "https://github.com/SharkBaitDLS/dv-stock-car-remover/releases/download/1.2.0/StockCarRemover.zip"
+		},
+		{
+			"Id": "StockCarRemover",
+			"Version": "1.1.0",
+			"DownloadUrl": "https://github.com/SharkBaitDLS/dv-stock-car-remover/releases/download/1.1.0/StockCarRemover.zip"
+		},
+		{
+			"Id": "StockCarRemover",
+			"Version": "1.0.1",
+			"DownloadUrl": "https://github.com/SharkBaitDLS/dv-stock-car-remover/releases/download/1.0.1/StockCarRemover.zip"
+		},
+		{
+			"Id": "StockCarRemover",
+			"Version": "1.0.0",
+			"DownloadUrl": "https://github.com/SharkBaitDLS/dv-stock-car-remover/releases/download/1.0.0/StockCarRemover.zip"
 		}
 	]
 }
