@@ -75,13 +75,7 @@ public static class JobGenerationPatches
         if (Main.Settings.DisabledLiveryIds.Count == 0) return true;
 
         var pool = __0.Where(CarFilter.IsCargoCarriable).ToList();
-        if (pool.Count == 0)
-        {
-            if (Main.Settings.EnableStationFallback) return true;
-
-            __result = [];
-            return false;
-        }
+        if (pool.Count == 0) return true;
 
         var rng = Rng(__instance);
         int count = System.Math.Min(__1, pool.Count);
@@ -94,6 +88,86 @@ public static class JobGenerationPatches
         }
         __result = picked;
         return false;
+    }
+}
+
+// Decides up front whether a station can produce a valid job at all.
+[HarmonyPatch(typeof(StationProceduralJobGenerator), nameof(StationProceduralJobGenerator.GenerateJobChain))]
+public static class StationProceduralJobGenerator_GenerateJobChain
+{
+    private static readonly FieldInfo RulesetField =
+        AccessTools.Field(typeof(StationProceduralJobGenerator), "generationRuleset");
+
+    // Snapshot of everything we temporarily mutate on the station's ruleset.
+    public sealed class Snapshot
+    {
+        public bool Load, Haul, Unload, EmptyHaul;
+        public List<CargoGroup> Output = null!, Input = null!;
+    }
+
+    public static void Prefix(StationProceduralJobGenerator __instance, out Snapshot? __state)
+    {
+        __state = null;
+        if (Main.Settings.DisabledLiveryIds.Count == 0) return;
+
+        var ruleset = (StationProceduralJobsRuleset)RulesetField.GetValue(__instance);
+        if (ruleset == null) return;
+
+        // Shunting load and freight haul draw from outputCargoGroups, shunting unload and
+        // logistical haul from inputCargoGroups
+        var outputUsable = ruleset.outputCargoGroups.Any(CarFilter.IsCargoGroupUsable);
+        var inputUsable = ruleset.inputCargoGroups.Any(CarFilter.IsCargoGroupUsable);
+
+        var supportsOutput = ruleset.loadStartingJobSupported || ruleset.haulStartingJobSupported;
+        var supportsInput = ruleset.unloadStartingJobSupported || ruleset.emptyHaulStartingJobSupported;
+        var canGenerateValid = (supportsOutput && outputUsable) || (supportsInput && inputUsable);
+
+        if (!canGenerateValid && Main.Settings.EnableStationFallback) return;
+
+        __state = new Snapshot
+        {
+            Load = ruleset.loadStartingJobSupported,
+            Haul = ruleset.haulStartingJobSupported,
+            Unload = ruleset.unloadStartingJobSupported,
+            EmptyHaul = ruleset.emptyHaulStartingJobSupported,
+            Output = ruleset.outputCargoGroups,
+            Input = ruleset.inputCargoGroups,
+        };
+
+        if (outputUsable)
+        {
+            ruleset.outputCargoGroups = ruleset.outputCargoGroups.Where(CarFilter.IsCargoGroupUsable).ToList();
+        }
+        else
+        {
+            ruleset.loadStartingJobSupported = false;
+            ruleset.haulStartingJobSupported = false;
+        }
+
+        if (inputUsable)
+        {
+            ruleset.inputCargoGroups = ruleset.inputCargoGroups.Where(CarFilter.IsCargoGroupUsable).ToList();
+        }
+        else
+        {
+            ruleset.unloadStartingJobSupported = false;
+            ruleset.emptyHaulStartingJobSupported = false;
+        }
+    }
+
+    public static void Finalizer(StationProceduralJobGenerator __instance, Snapshot? __state)
+    {
+        if (__state == null) return;
+
+        var ruleset = (StationProceduralJobsRuleset)RulesetField.GetValue(__instance);
+        if (ruleset == null) return;
+
+        ruleset.loadStartingJobSupported = __state.Load;
+        ruleset.haulStartingJobSupported = __state.Haul;
+        ruleset.unloadStartingJobSupported = __state.Unload;
+        ruleset.emptyHaulStartingJobSupported = __state.EmptyHaul;
+        ruleset.outputCargoGroups = __state.Output;
+        ruleset.inputCargoGroups = __state.Input;
     }
 }
 

@@ -2,6 +2,11 @@
 	"Releases": [
 		{
 			"Id": "StockCarRemover",
+			"Version": "1.4.2",
+			"DownloadUrl": "https://github.com/SharkBaitDLS/dv-stock-car-remover/releases/download/1.4.2/StockCarRemover.zip"
+		},
+		{
+			"Id": "StockCarRemover",
 			"Version": "1.4.1",
 			"DownloadUrl": "https://github.com/SharkBaitDLS/dv-stock-car-remover/releases/download/1.4.1/StockCarRemover.zip"
 		},
