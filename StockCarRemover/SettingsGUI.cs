@@ -24,6 +24,15 @@ internal static class SettingsGUI
     private static Vector2 _tenderScroll;
     private static string _tenderSearch = "";
 
+    private const string LocoKindId = "Loco";
+
+    private static List<TrainCarLivery>? _locomotives;
+    private static List<(string Station, object Data)> _chanceStations = [];
+    private static List<(TrainCarLivery Loco, float[] Chances)> _chanceRows = [];
+
+    private const string SpawnChanceText =
+        "Chance of each locomotive spawning at each station, as calculated by CCL. Updates upon save.";
+
     private const string IntroText =
         """
         Uncheck rolling stock to remove it from the spawn pool.
@@ -104,11 +113,56 @@ internal static class SettingsGUI
                     DrawLocoRow(livery);
             else
                 DrawCheckboxGrid(liveries);
+
+            if (key == LocoKindId && CustomCarLoaderInterop.HasSpawnChances)
+            {
+                GUILayout.Space(8);
+                GUILayout.Label("Spawn Chances");
+                DrawSpawnChanceTable();
+            }
             GUILayout.Space(2);
         }
 
         GUILayout.EndVertical();
         GUILayout.Space(2);
+    }
+
+    private static void DrawSpawnChanceTable()
+    {
+        var stations = CustomCarLoaderInterop.StationSpawnChances().OrderBy(s => s.Station).ToList();
+        if (stations.Count == 0)
+        {
+            GUILayout.Label("Load a save to see spawn chances.");
+            return;
+        }
+
+        if (!stations.Select(s => s.Data).SequenceEqual(_chanceStations.Select(s => s.Data)))
+        {
+            _locomotives ??= [.. Globals.G.Types.Liveries.Where(CarTypes.IsLocomotive).OrderBy(l => l.id)];
+            _chanceStations = stations;
+            _chanceRows = [.. _locomotives.Select(loco =>
+                (loco, stations.Select(s => CustomCarLoaderInterop.SpawnChance(s.Data, loco)).ToArray()))];
+        }
+
+        GUILayout.Label(SpawnChanceText, GUILayout.ExpandWidth(true));
+        GUILayout.Space(2);
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Locomotive", GUILayout.Width(220));
+        foreach (var (station, _) in _chanceStations)
+            GUILayout.Label(station, GUILayout.Width(48));
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
+
+        foreach (var (loco, chances) in _chanceRows)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(Loc(loco.localizationKey, loco.id), GUILayout.Width(220));
+            foreach (var chance in chances)
+                GUILayout.Label(chance > 0 ? chance.ToString("0%") : "–", GUILayout.Width(48));
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
     }
 
     private static void DrawCheckboxGrid(List<TrainCarLivery> liveries)

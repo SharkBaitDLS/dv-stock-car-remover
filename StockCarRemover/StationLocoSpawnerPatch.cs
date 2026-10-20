@@ -37,6 +37,7 @@ public static class StationLocoSpawner_Start_Patch
     {
         foreach (var spawner in Object.FindObjectsOfType<StationLocoSpawner>())
             Reapply(spawner);
+        CustomCarLoaderInterop.RefreshSpawnChances();
     }
 
     private static void Reapply(StationLocoSpawner spawner)
