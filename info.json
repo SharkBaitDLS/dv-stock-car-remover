@@ -1,6 +1,6 @@
 {
 	"Id": "StockCarRemover",
-	"Version": "1.4.2",
+	"Version": "1.5.0",
 	"DisplayName": "Stock Car Remover",
 	"Author": "SharkBaitDLS",
 	"EntryMethod": "StockCarRemover.Main.Load",
@@ -8,7 +8,9 @@
 	"Repository": "https://raw.githubusercontent.com/SharkBaitDLS/dv-stock-car-remover/main/repository.json",
 	"LoadAfter": [
 		"DVCustomCarLoader",
+		"Multiplayer",
 		"PassengerJobs",
 		"PersistentJobsMod"
-	]
+	],
+	"MultiplayerCompatibility": "Host"
 }
